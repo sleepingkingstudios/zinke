@@ -1,0 +1,8 @@
+require:
+  - rubocop-rspec
+  - ./spec/support/rubocop_patch
+
+AllCops:
+  TargetRubyVersion: 2.5
+  Exclude:
+    - 'tmp/**/*.rb'
