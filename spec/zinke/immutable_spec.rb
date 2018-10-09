@@ -4,6 +4,41 @@ require 'zinke/immutable'
 
 RSpec.describe Zinke::Immutable do
   shared_context 'with a complex data structure' do
+    let(:data) do
+      {
+        cities: [
+          {
+            name:     'The Free City of Caldera',
+            location: 'in a volcano'
+          },
+          {
+            name:     "Grove of Star's Light",
+            location: 'probably a forest'
+          },
+          {
+            name:     'Winterheart',
+            location: 'somewhere cold'
+          }
+        ],
+        era:   'Renaissance',
+        genre: 'High Fantasy',
+        magic: :high,
+        spells: Set.new(
+          [
+            { name: 'fireball' },
+            { name: 'lightning bolt' },
+            { name: 'magic missile' }
+          ]
+        ),
+        weapons: {
+          bows: Set.new(%w[crossbow longbow shortbow]),
+          polearms: %w[halberd pike spear],
+          swords: {
+            japanese: Set.new(%w[shoto daito tachi])
+          }
+        }
+      }
+    end
     let(:immutable_data) do
       Hamster::Hash.new(
         cities: Hamster::Vector.new(
@@ -208,6 +243,205 @@ RSpec.describe Zinke::Immutable do
         expect { described_class.dig immutable, 1, :name, :nickname }
           .to raise_error TypeError, error_message
       end
+    end
+  end
+
+  describe '::from_object' do
+    it { expect(described_class).to respond_to(:from_object).with(1).argument }
+
+    describe 'with nil' do
+      it { expect(described_class.from_object nil).to be nil }
+    end
+
+    describe 'with a Float' do
+      it { expect(described_class.from_object 5.0).to be == 5.0 }
+    end
+
+    describe 'with an Integer' do
+      it { expect(described_class.from_object 3).to be 3 }
+    end
+
+    describe 'with an immutable String' do
+      let(:str) { 'string' }
+
+      it { expect(described_class.from_object str).to be str }
+    end
+
+    describe 'with a mutable String' do
+      let(:str) { +'string' }
+
+      it { expect(described_class.from_object str).to be == str }
+
+      it { expect(described_class.from_object(str).frozen?).to be true }
+    end
+
+    describe 'with a Symbol' do
+      it { expect(described_class.from_object :symbol).to be :symbol }
+    end
+
+    describe 'with an empty array' do
+      it { expect(described_class.from_object []).to be_a Hamster::Vector }
+
+      it { expect(described_class.from_object []).to be_empty }
+    end
+
+    describe 'with an array with items' do
+      let(:ary)       { %w[one two three] }
+      let(:immutable) { described_class.from_object ary }
+
+      it { expect(immutable).to be_a Hamster::Vector }
+
+      it 'should include the array items', :aggregate_failures do
+        immutable.each.with_index do |item, index|
+          expect(item).to be == ary[index]
+        end
+      end
+    end
+
+    describe 'with an array of data objects' do
+      include_context 'with a complex data structure'
+
+      let(:ary)       { data[:cities] }
+      let(:immutable) { described_class.from_object ary }
+
+      it { expect(immutable).to be_a Hamster::Vector }
+
+      it { expect(immutable).to be == immutable_data[:cities] }
+
+      it 'should convert the array items to immutable objects' do
+        expect(immutable).to all be_a Hamster::Hash
+      end
+
+      it 'should include the array items', :aggregate_failures do
+        immutable.each.with_index do |item, index|
+          expect(item).to be == ary[index]
+        end
+      end
+    end
+
+    describe 'with an empty hash' do
+      it { expect(described_class.from_object({})).to be_a Hamster::Hash }
+
+      it { expect(described_class.from_object({})).to be_empty }
+    end
+
+    describe 'with a hash with string keys' do
+      let(:hsh) do
+        {
+          'english'  => 'shortsword',
+          'german'   => 'einhänder',
+          'japanese' => 'shoto'
+        }
+      end
+      let(:immutable) { described_class.from_object hsh }
+
+      it { expect(immutable).to be_a Hamster::Hash }
+
+      it 'should convert the keys to symbols', :aggregate_failures do
+        immutable.each_key do |key|
+          expect(key).to be_a Symbol
+        end
+      end
+
+      it 'should include the hash items', :aggregate_failures do
+        immutable.each do |key, value|
+          expect(value).to be == hsh[key.to_s]
+        end
+      end
+    end
+
+    describe 'with a hash with symbol keys' do
+      let(:hsh) do
+        {
+          english:  'shortsword',
+          german:   'einhänder',
+          japanese: 'shoto'
+        }
+      end
+      let(:immutable) { described_class.from_object hsh }
+
+      it { expect(immutable).to be_a Hamster::Hash }
+
+      it 'should include the hash items', :aggregate_failures do
+        immutable.each do |key, value|
+          expect(value).to be == hsh[key]
+        end
+      end
+    end
+
+    describe 'with a hash of data objects' do
+      include_context 'with a complex data structure'
+
+      let(:hsh)       { data[:weapons] }
+      let(:immutable) { described_class.from_object hsh }
+
+      it { expect(immutable).to be_a Hamster::Hash }
+
+      it { expect(immutable).to be == immutable_data[:weapons] }
+
+      it { expect(immutable[:bows]).to be_a Hamster::Set }
+
+      it { expect(immutable[:polearms]).to be_a Hamster::Vector }
+
+      it { expect(immutable[:swords]).to be_a Hamster::Hash }
+
+      it { expect(immutable[:swords][:japanese]).to be_a Hamster::Set }
+
+      it 'should convert array items' do
+        expect(immutable[:polearms]).to be == hsh[:polearms]
+      end
+
+      it 'should convert set items' do
+        expect(immutable[:bows]).to contain_exactly(*hsh[:bows])
+      end
+    end
+
+    describe 'with an empty set' do
+      it { expect(described_class.from_object Set.new).to be_a Hamster::Set }
+
+      it { expect(described_class.from_object Set.new).to be_empty }
+    end
+
+    describe 'with a set with items' do
+      let(:set)       { Set.new(%w[one two three]) }
+      let(:immutable) { described_class.from_object set }
+
+      it { expect(immutable).to be_a Hamster::Set }
+
+      it 'should include the set items', :aggregate_failures do
+        immutable.each do |item|
+          expect(set).to include item
+        end
+      end
+    end
+
+    describe 'with a set of data objects' do
+      include_context 'with a complex data structure'
+
+      let(:set)       { data[:spells] }
+      let(:immutable) { described_class.from_object set }
+
+      it { expect(immutable).to be_a Hamster::Set }
+
+      it { expect(immutable).to be == immutable_data[:spells] }
+
+      it 'should convert the set items to immutable objects' do
+        expect(immutable).to all be_a Hamster::Hash
+      end
+
+      it 'should include the set items', :aggregate_failures do
+        immutable.each { |item| expect(set).to include item.to_hash }
+      end
+    end
+
+    describe 'with a complex data structure' do
+      include_context 'with a complex data structure'
+
+      let(:immutable) { described_class.from_object data }
+
+      it { expect(immutable).to be_a Hamster::Hash }
+
+      it { expect(immutable).to be == immutable_data }
     end
   end
 end

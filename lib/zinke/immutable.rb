@@ -23,6 +23,21 @@ module Zinke
       dig_object(immutable, keys)
     end
 
+    def self.from_object(obj) # rubocop:disable Metrics/MethodLength
+      case obj
+      when Array
+        from_array(obj)
+      when Hash
+        from_hash(obj)
+      when Set
+        from_set(obj)
+      when String
+        obj.freeze
+      else
+        obj
+      end
+    end
+
     class << self
       private
 
@@ -38,8 +53,7 @@ module Zinke
         rest.empty? ? obj : dig_object(obj, rest)
       end
 
-      # rubocop:disable Metrics/MethodLength
-      def dig_object(obj, keys)
+      def dig_object(obj, keys) # rubocop:disable Metrics/MethodLength
         case obj
         when nil
           nil
@@ -55,7 +69,32 @@ module Zinke
           raise TypeError, "#{obj.class} does not have #dig method"
         end
       end
-      # rubocop:enable Metrics/MethodLength
+
+      def from_array(ary)
+        raise ArgumentError, 'argument must be an Array' unless ary.is_a?(Array)
+
+        data = ary.map { |obj| from_object(obj) }
+
+        Hamster::Vector.new(data)
+      end
+
+      def from_hash(hsh)
+        raise ArgumentError, 'argument must be a Hash' unless hsh.is_a?(Hash)
+
+        tools = SleepingKingStudios::Tools::Toolbelt.instance
+        data  = tools.hash.convert_keys_to_symbols(hsh)
+        data  = data.map { |key, value| [key, from_object(value)] }
+
+        Hamster::Hash.new(data)
+      end
+
+      def from_set(set)
+        raise ArgumentError, 'argument must be a Set' unless set.is_a?(Set)
+
+        data = set.map { |obj| from_object(obj) }
+
+        Hamster::Set.new(data)
+      end
     end
   end
 end
