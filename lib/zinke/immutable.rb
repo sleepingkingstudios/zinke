@@ -38,6 +38,19 @@ module Zinke
       end
     end
 
+    def self.to_object(immutable)
+      case immutable
+      when Hamster::Hash
+        to_hash(immutable)
+      when Hamster::Set
+        to_set(immutable)
+      when Hamster::Vector
+        to_array(immutable)
+      else
+        immutable
+      end
+    end
+
     class << self
       private
 
@@ -94,6 +107,24 @@ module Zinke
         data = set.map { |obj| from_object(obj) }
 
         Hamster::Set.new(data)
+      end
+
+      def to_array(immutable)
+        immutable.map { |item| to_object(item) }.to_a
+      end
+
+      def to_hash(immutable)
+        data = immutable.map do |key, value|
+          [key, to_object(value)]
+        end
+
+        Hash[data]
+      end
+
+      def to_set(immutable)
+        data = immutable.map { |item| to_object(item) }
+
+        Set.new(data)
       end
     end
   end

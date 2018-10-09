@@ -444,4 +444,173 @@ RSpec.describe Zinke::Immutable do
       it { expect(immutable).to be == immutable_data }
     end
   end
+
+  describe '::to_object' do
+    describe 'with nil' do
+      it { expect(described_class.to_object nil).to be nil }
+    end
+
+    describe 'with a Float' do
+      it { expect(described_class.to_object 5.0).to be == 5.0 }
+    end
+
+    describe 'with an Integer' do
+      it { expect(described_class.to_object 3).to be 3 }
+    end
+
+    describe 'with a String' do
+      it { expect(described_class.from_object 'string').to be == 'string' }
+    end
+
+    describe 'with a Symbol' do
+      it { expect(described_class.from_object :symbol).to be :symbol }
+    end
+
+    describe 'with an empty hash' do
+      let(:immutable) { Hamster::Hash.new }
+      let(:set)       { described_class.to_object immutable }
+
+      it { expect(set).to be_a Hash }
+
+      it { expect(set).to be_empty }
+    end
+
+    describe 'with a hash with items' do
+      let(:immutable) do
+        Hamster::Hash.new(
+          english:  'shortsword',
+          german:   'einhänder',
+          japanese: 'shoto'
+        )
+      end
+      let(:hsh) { described_class.to_object immutable }
+
+      it { expect(hsh).to be_a Hash }
+
+      it 'should include the hash items', :aggregate_failures do
+        hsh.each do |key, value|
+          expect(value).to be == immutable[key]
+        end
+      end
+    end
+
+    describe 'with a hash of data objects' do
+      include_context 'with a complex data structure'
+
+      let(:immutable) { immutable_data[:weapons] }
+      let(:hsh)       { described_class.to_object immutable }
+
+      it { expect(hsh).to be_a Hash }
+
+      it { expect(hsh).to be == data[:weapons] }
+
+      it { expect(hsh[:bows]).to be_a Set }
+
+      it { expect(hsh[:polearms]).to be_a Array }
+
+      it { expect(hsh[:swords]).to be_a Hash }
+
+      it { expect(hsh[:swords][:japanese]).to be_a Set }
+
+      it 'should convert array items' do
+        expect(hsh[:polearms]).to be == immutable[:polearms]
+      end
+
+      it 'should convert set items' do
+        expect(hsh[:bows]).to contain_exactly(*immutable[:bows])
+      end
+    end
+
+    describe 'with an empty set' do
+      let(:immutable) { Hamster::Set.new }
+      let(:set)       { described_class.to_object immutable }
+
+      it { expect(set).to be_a Set }
+
+      it { expect(set).to be_empty }
+    end
+
+    describe 'with a set with items' do
+      let(:immutable) { Hamster::Set.new(%w[one two three]) }
+      let(:set)       { described_class.to_object immutable }
+
+      it { expect(set).to be_a Set }
+
+      it 'should include the set items', :aggregate_failures do
+        immutable.each { |item| expect(set).to include item }
+      end
+    end
+
+    describe 'with a set of data objects' do
+      include_context 'with a complex data structure'
+
+      let(:immutable) { immutable_data[:spells] }
+      let(:set)       { described_class.to_object immutable }
+
+      it { expect(set).to be_a Set }
+
+      it { expect(set).to be == data[:spells] }
+
+      it 'should convert the set items from immutable objects' do
+        expect(set).to all be_a Hash
+      end
+
+      it 'should include the set items', :aggregate_failures do
+        immutable.each { |item| expect(set).to include item.to_hash }
+      end
+    end
+
+    describe 'with an empty vector' do
+      let(:immutable) { Hamster::Vector.new }
+      let(:ary)       { described_class.to_object immutable }
+
+      it { expect(ary).to be_a Array }
+
+      it { expect(ary).to be_empty }
+    end
+
+    describe 'with a vector with items' do
+      let(:immutable) { Hamster::Vector.new(%w[one two three]) }
+      let(:ary)       { described_class.to_object immutable }
+
+      it { expect(ary).to be_a Array }
+
+      it 'should include the vector items', :aggregate_failures do
+        ary.each.with_index do |item, index|
+          expect(item).to be == immutable[index]
+        end
+      end
+    end
+
+    describe 'with a vector of data objects' do
+      include_context 'with a complex data structure'
+
+      let(:immutable) { immutable_data[:cities] }
+      let(:ary)       { described_class.to_object immutable }
+
+      it { expect(ary).to be_a Array }
+
+      it { expect(ary).to be == data[:cities] }
+
+      it 'should convert the vector items from immutable objects' do
+        expect(ary).to all be_a Hash
+      end
+
+      it 'should include the vector items', :aggregate_failures do
+        ary.each.with_index do |item, index|
+          expect(item).to be == immutable[index].to_hash
+        end
+      end
+    end
+
+    describe 'with a complex data structure' do
+      include_context 'with a complex data structure'
+
+      let(:hsh) { described_class.to_object immutable_data }
+
+      it { expect(hsh).to be_a Hash }
+
+      it { expect(hsh).to be == data }
+    end
+  end
 end
