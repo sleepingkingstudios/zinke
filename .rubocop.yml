@@ -6,3 +6,6 @@ AllCops:
   TargetRubyVersion: 2.5
   Exclude:
     - 'tmp/**/*.rb'
+
+Layout/AlignParameters:
+  EnforcedStyle: with_fixed_indentation
