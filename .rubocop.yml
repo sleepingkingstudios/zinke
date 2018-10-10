@@ -18,6 +18,10 @@ Metrics/BlockLength:
 RSpec/ExampleWording:
   Enabled: false
 
+RSpec/FilePath:
+  Exclude:
+    - 'spec/integration/**/*_spec.rb'
+
 RSpec/HookArgument:
   Enabled: false
 
