@@ -344,4 +344,54 @@ RSpec.describe Zinke::Store do
       end
     end
   end
+
+  describe '#unsubscribe' do
+    let(:type)   { 'spec.actions.example_action' }
+    let(:action) { { type: type } }
+
+    it { expect(store).to respond_to(:unsubscribe).with(1).argument }
+
+    wrap_context 'with a listener with no action type' do
+      context 'when an action is dispatched' do
+        it 'should not call #update' do
+          store.unsubscribe(unscoped_listener)
+
+          store.dispatch(action)
+
+          expect(unscoped_listener).not_to have_received(:update)
+        end
+      end
+    end
+
+    context 'with multiple listeners' do
+      include_context 'with a listener with no action type'
+      include_context 'with a listener with a non-matching action type'
+      include_context 'with a listener with a matching action type'
+
+      let(:active_listeners) do
+        [
+          non_matching_listener,
+          matching_listener
+        ]
+      end
+
+      context 'when an action is dispatched' do
+        it 'should not call #update on the unsubscribed listener' do
+          store.unsubscribe(unscoped_listener)
+
+          store.dispatch(action)
+
+          expect(unscoped_listener).not_to have_received(:update)
+        end
+
+        it 'should call #update on each remaining listener with the action' do
+          store.unsubscribe(unscoped_listener)
+
+          store.dispatch(action)
+
+          expect(active_listeners).to all have_received(:update).with(action)
+        end
+      end
+    end
+  end
 end

@@ -26,6 +26,18 @@ module Zinke
 
         raise LISTENER_ERROR
       end
+
+      def subscribe(action_type = nil, definition:)
+        listener = Listener.new(action_type, definition: definition)
+
+        add_observer(listener)
+
+        listener
+      end
+
+      def unsubscribe(listener)
+        delete_observer(listener)
+      end
     end
 
     # Helper class encapsulating an action handler. Optionally provides basic
@@ -55,14 +67,13 @@ module Zinke
     end
 
     def subscribe(action_type = nil, &block)
-      listener = Listener.new(
-        action_type,
-        definition: ->(action) { instance_exec(action, &block) }
-      )
+      definition = ->(action) { instance_exec(action, &block) }
 
-      @dispatcher.add_observer(listener)
+      @dispatcher.subscribe(action_type, definition: definition)
+    end
 
-      listener
+    def unsubscribe(listener)
+      @dispatcher.unsubscribe(listener)
     end
 
     attr_reader :state
