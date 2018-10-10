@@ -94,9 +94,7 @@ module Zinke
       def from_hash(hsh)
         raise ArgumentError, 'argument must be a Hash' unless hsh.is_a?(Hash)
 
-        tools = SleepingKingStudios::Tools::Toolbelt.instance
-        data  = tools.hash.convert_keys_to_symbols(hsh)
-        data  = data.map { |key, value| [key, from_object(value)] }
+        data = hsh.map { |key, value| [key.intern, from_object(value)] }
 
         Hamster::Hash.new(data)
       end
