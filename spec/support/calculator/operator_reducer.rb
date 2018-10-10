@@ -10,11 +10,21 @@ module Spec
       include Zinke::Reducer
 
       update Spec::Calculator::OperatorActions::ADD do |state, action|
-        state.put(:value) { add_values(state.get(:value), action[:amount]) }
+        amount    = action[:amount]
+        old_value = state.get(:value)
+        new_value = add_values(old_value, action[:amount])
+        display   = "#{old_value} + #{amount.to_f} = #{new_value}"
+
+        state.merge(display: display, value: new_value)
       end
 
       update Spec::Calculator::OperatorActions::SUBTRACT do |state, action|
-        state.put(:value) { state.get(:value) - action[:amount] }
+        amount    = action[:amount]
+        old_value = state.get(:value)
+        new_value = old_value - amount
+        display   = "#{old_value} - #{amount.to_f} = #{new_value}"
+
+        state.merge(display: display, value: new_value)
       end
 
       update Spec::Calculator::OperatorActions::MULTIPLY, :multiply
@@ -23,13 +33,22 @@ module Spec
       def divide(state, action)
         amount = action[:amount]
 
-        return state if amount.zero?
+        return state.merge(display: 'DIV / 0') if amount.zero?
 
-        state.put(:value) { state.get(:value) / amount }
+        old_value = state.get(:value)
+        new_value = old_value / amount
+        display   = "#{old_value} / #{amount.to_f} = #{new_value}"
+
+        state.merge(display: display, value: new_value)
       end
 
       def multiply(state, action)
-        state.put(:value, multiply_values(state.get(:value), action[:amount]))
+        amount    = action[:amount]
+        old_value = state.get(:value)
+        new_value = multiply_values(state.get(:value), amount)
+        display   = "#{old_value} * #{amount.to_f} = #{new_value}"
+
+        state.merge(display: display, value: new_value)
       end
 
       private

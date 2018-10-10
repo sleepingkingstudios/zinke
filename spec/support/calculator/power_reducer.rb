@@ -10,13 +10,13 @@ module Spec
       include Zinke::Reducer
 
       update Spec::Calculator::PowerActions::TURN_OFF do |state, _action|
-        state.merge(on: false, value: nil)
+        state.merge(display: nil, on: false, value: nil)
       end
 
       update Spec::Calculator::PowerActions::TURN_ON, :turn_on
 
       def turn_on(state, _action)
-        state.merge(on: true, value: 0.0)
+        state.merge(display: '0.0', on: true, value: 0.0)
       end
     end
   end

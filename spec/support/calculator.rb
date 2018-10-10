@@ -14,9 +14,14 @@ module Spec
       include Spec::Calculator::PowerReducer
     end
 
-    def initialize
-      @store = Spec::Calculator::Store.new(initial_state)
+    def initialize(output = STDOUT)
+      @output = output
+      @store  = Spec::Calculator::Store.new(initial_state)
+
+      @store.subscribe { update_display }
     end
+
+    attr_reader :output
 
     def add(amount)
       return self unless on?
@@ -24,6 +29,10 @@ module Spec
       @store.dispatch Spec::Calculator::OperatorActions.add(amount)
 
       self
+    end
+
+    def display
+      state.get(:display)
     end
 
     def divide(amount)
@@ -80,9 +89,16 @@ module Spec
 
     def initial_state
       {
-        on:    false,
-        value: nil
+        on:      false,
+        display: nil,
+        value:   nil
       }
+    end
+
+    def update_display
+      return unless on?
+
+      output.puts(display)
     end
   end
 end
