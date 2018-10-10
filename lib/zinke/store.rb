@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'observer'
+
 require 'hamster'
 
 require 'zinke/immutable'
@@ -7,10 +9,60 @@ require 'zinke/immutable'
 module Zinke
   # Encapsulates a single, immutable state.
   class Store
+    # Helper class implementing Observable and providing a less cryptic error
+    # message when adding a listener while dispatching an action.
+    class Dispatcher
+      ITERATION_ERROR = "can't add a new key into hash during iteration"
+      LISTENER_ERROR  = "can't add a listener while dispatching an action"
+
+      include Observable
+
+      def dispatch(action)
+        changed
+
+        notify_observers(action)
+      rescue RuntimeError => exception
+        raise unless exception.message == ITERATION_ERROR
+
+        raise LISTENER_ERROR
+      end
+    end
+
+    # Helper class encapsulating an action handler. Optionally provides basic
+    # equality check against an expected action type.
+    class Listener
+      def initialize(action_type = nil, definition:)
+        @action_type = action_type
+        @definition  = definition
+      end
+
+      def update(action)
+        return unless @action_type.nil? || @action_type == action[:type]
+
+        @definition.call(action)
+      end
+    end
+
     def initialize(initial_state = nil)
       guard_initial_state!(initial_state)
 
-      @state = Zinke::Immutable.from_object(initial_state || {})
+      @dispatcher = Dispatcher.new
+      @state      = Zinke::Immutable.from_object(initial_state || {})
+    end
+
+    def dispatch(action)
+      @dispatcher.dispatch(action)
+    end
+
+    def subscribe(action_type = nil, &block)
+      listener = Listener.new(
+        action_type,
+        definition: ->(action) { instance_exec(action, &block) }
+      )
+
+      @dispatcher.add_observer(listener)
+
+      listener
     end
 
     attr_reader :state
