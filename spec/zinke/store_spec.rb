@@ -114,7 +114,7 @@ RSpec.describe Zinke::Store do
 
       before(:example) do
         inner = inner_action
-        store.subscribe(type) { dispatch(inner) }
+        store.subscribe(type) { store.dispatch(inner) }
       end
 
       # rubocop:disable RSpec/ExampleLength
@@ -141,7 +141,7 @@ RSpec.describe Zinke::Store do
       end
 
       it 'should raise an error' do
-        store.subscribe { subscribe }
+        store.subscribe { store.subscribe }
 
         expect { store.dispatch(action) }
           .to raise_error RuntimeError, error_message

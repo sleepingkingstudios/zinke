@@ -67,9 +67,7 @@ module Zinke
     end
 
     def subscribe(action_type = nil, &block)
-      definition = ->(action) { instance_exec(action, &block) }
-
-      @dispatcher.subscribe(action_type, definition: definition)
+      @dispatcher.subscribe(action_type, definition: block)
     end
 
     def unsubscribe(listener)
