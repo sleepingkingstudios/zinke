@@ -215,11 +215,11 @@ RSpec.describe Zinke::Store do
 
   describe '#state=' do
     let(:new_state) do
-      Hamster::Hash.new(
+      {
         era:   'Renaissance',
         genre: 'High Fantasy',
         magic: :high
-      )
+      }
     end
 
     include_examples 'should have private writer', :state=

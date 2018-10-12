@@ -2,8 +2,6 @@
 
 require 'observer'
 
-require 'hamster'
-
 module Zinke
   # Encapsulates a single state and provides dispatch and subscribe methods to
   # notify on updates to that state.
@@ -84,7 +82,6 @@ module Zinke
     def guard_initial_state!(value)
       return if value.nil?
       return if value.is_a?(Hash)
-      return if value.is_a?(Hamster::Hash)
 
       message = "initial state must be a Hash or nil, but was #{value.inspect}"
 
