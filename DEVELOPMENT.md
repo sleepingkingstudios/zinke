@@ -2,10 +2,6 @@
 
 ## Version 0.1.0
 
-- remove hamster dev dependency
-  - remove Zinke::Immutable
-  - using an immutable state is Strongly Recommended, but you do you
-
 ### Documentation
 
 - README
