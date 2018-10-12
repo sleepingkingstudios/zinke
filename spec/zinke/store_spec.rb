@@ -167,15 +167,11 @@ RSpec.describe Zinke::Store do
     describe 'when initialized with no arguments' do
       let(:store) { described_class.new }
 
-      it { expect(store.state).to be_a Hamster::Hash }
-
       it { expect(store.state).to be == {} }
     end
 
     describe 'when the initial state is nil' do
       let(:initial_state) { nil }
-
-      it { expect(store.state).to be_a Hamster::Hash }
 
       it { expect(store.state).to be == {} }
     end
@@ -183,33 +179,10 @@ RSpec.describe Zinke::Store do
     describe 'when the initial state is an empty hash' do
       let(:initial_state) { {} }
 
-      it { expect(store.state).to be_a Hamster::Hash }
-
       it { expect(store.state).to be == {} }
     end
 
-    describe 'when the initial state is a hash with string keys' do
-      let(:initial_state) do
-        {
-          'era'   => 'Renaissance',
-          'genre' => 'High Fantasy',
-          'magic' => :high
-        }
-      end
-      let(:expected) do
-        {
-          era:   'Renaissance',
-          genre: 'High Fantasy',
-          magic: :high
-        }
-      end
-
-      it { expect(store.state).to be_a Hamster::Hash }
-
-      it { expect(store.state).to be == expected }
-    end
-
-    describe 'when the initial state is a hash with symbol keys' do
+    describe 'when the initial state is a hash' do
       let(:initial_state) do
         {
           era:   'Renaissance',
@@ -218,29 +191,6 @@ RSpec.describe Zinke::Store do
         }
       end
       let(:expected) { initial_state }
-
-      it { expect(store.state).to be_a Hamster::Hash }
-
-      it { expect(store.state).to be == expected }
-    end
-
-    describe 'when the initial state is an immutable hash' do
-      let(:initial_state) do
-        Hamster::Hash.new(
-          era:   'Renaissance',
-          genre: 'High Fantasy',
-          magic: :high
-        )
-      end
-      let(:expected) do
-        {
-          era:   'Renaissance',
-          genre: 'High Fantasy',
-          magic: :high
-        }
-      end
-
-      it { expect(store.state).to be_a Hamster::Hash }
 
       it { expect(store.state).to be == expected }
     end
@@ -257,19 +207,7 @@ RSpec.describe Zinke::Store do
           }
         }
       end
-      let(:expected) do
-        Hamster::Hash.new(
-          weapons: Hamster::Hash.new(
-            bows: Hamster::Set.new(%w[crossbow longbow shortbow]),
-            polearms: Hamster::Vector.new(%w[halberd pike spear]),
-            swords: Hamster::Hash.new(
-              japanese: Hamster::Set.new(%w[shoto daito tachi])
-            )
-          )
-        )
-      end
-
-      it { expect(store.state).to be_a Hamster::Hash }
+      let(:expected) { initial_state }
 
       it { expect(store.state).to be == expected }
     end

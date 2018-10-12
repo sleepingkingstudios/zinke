@@ -32,7 +32,7 @@ module Spec
     end
 
     def display
-      state.get(:display)
+      state[:display]
     end
 
     def divide(amount)
@@ -52,7 +52,7 @@ module Spec
     end
 
     def on?
-      state.get(:on)
+      state[:on]
     end
 
     def state
@@ -82,7 +82,7 @@ module Spec
     end
 
     def value
-      state.get(:value)
+      state[:value]
     end
 
     private

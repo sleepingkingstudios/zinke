@@ -11,7 +11,7 @@ module Spec
 
       update Spec::Calculator::OperatorActions::ADD do |state, action|
         amount    = action[:amount]
-        old_value = state.get(:value)
+        old_value = state[:value]
         new_value = add_values(old_value, action[:amount])
         display   = "#{old_value} + #{amount.to_f} = #{new_value}"
 
@@ -20,7 +20,7 @@ module Spec
 
       update Spec::Calculator::OperatorActions::SUBTRACT do |state, action|
         amount    = action[:amount]
-        old_value = state.get(:value)
+        old_value = state[:value]
         new_value = old_value - amount
         display   = "#{old_value} - #{amount.to_f} = #{new_value}"
 
@@ -35,7 +35,7 @@ module Spec
 
         return state.merge(display: 'DIV / 0') if amount.zero?
 
-        old_value = state.get(:value)
+        old_value = state[:value]
         new_value = old_value / amount
         display   = "#{old_value} / #{amount.to_f} = #{new_value}"
 
@@ -44,8 +44,8 @@ module Spec
 
       def multiply(state, action)
         amount    = action[:amount]
-        old_value = state.get(:value)
-        new_value = multiply_values(state.get(:value), amount)
+        old_value = state[:value]
+        new_value = multiply_values(state[:value], amount)
         display   = "#{old_value} * #{amount.to_f} = #{new_value}"
 
         state.merge(display: display, value: new_value)
