@@ -267,8 +267,6 @@ RSpec.describe Spec::Calculator do
 
     it { expect(calculator).to have_reader :state }
 
-    it { expect(calculator.state).to be_a Hamster::Hash }
-
     it { expect(calculator.state).to be == expected }
   end
 

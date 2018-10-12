@@ -13,11 +13,11 @@ RSpec.describe Zinke::Reducer do
       include Zinke::Reducer
 
       def add(amount)
-        state.put(:value, state.get(:value) + amount)
+        state.merge(value: state[:value] + amount)
       end
 
       def multiply(state, action)
-        state.put(:value, state.get(:value) * action[:amount])
+        state.merge(value: state[:value] * action[:amount])
       end
     end
   end
@@ -52,7 +52,7 @@ RSpec.describe Zinke::Reducer do
         it 'should not update the state' do
           described_class.update(action_type) do |state, action|
             # :nocov:
-            state.put(:value, state.get(:value) + action[:amount])
+            state.merge(value: state[:value] + action[:amount])
             # :nocov:
           end
 
@@ -75,12 +75,12 @@ RSpec.describe Zinke::Reducer do
         # rubocop:disable RSpec/ExampleLength
         it 'should update the state' do
           described_class.update(action_type) do |state, action|
-            state.put(:value, state.get(:value) + action[:amount])
+            state.merge(value: state[:value] + action[:amount])
           end
 
           expect { store.dispatch(action) }
             .to change(store, :state)
-            .to(satisfy { |state| state.get(:value) == 15 })
+            .to(satisfy { |state| state[:value] == 15 })
         end
         # rubocop:enable RSpec/ExampleLength
       end
@@ -100,7 +100,7 @@ RSpec.describe Zinke::Reducer do
 
           expect { store.dispatch(action) }
             .to change(store, :state)
-            .to(satisfy { |state| state.get(:value) == 15 })
+            .to(satisfy { |state| state[:value] == 15 })
         end
         # rubocop:enable RSpec/ExampleLength
       end
@@ -154,7 +154,7 @@ RSpec.describe Zinke::Reducer do
 
           expect { store.dispatch(action) }
             .to change(store, :state)
-            .to(satisfy { |state| state.get(:value) == 10 })
+            .to(satisfy { |state| state[:value] == 10 })
         end
       end
     end

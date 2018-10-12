@@ -2,12 +2,9 @@
 
 require 'observer'
 
-require 'hamster'
-
-require 'zinke/immutable'
-
 module Zinke
-  # Encapsulates a single, immutable state.
+  # Encapsulates a single state and provides dispatch and subscribe methods to
+  # notify on updates to that state.
   class Store
     # Helper class implementing Observable and providing a less cryptic error
     # message when adding a listener while dispatching an action.
@@ -59,7 +56,7 @@ module Zinke
       guard_initial_state!(initial_state)
 
       @dispatcher = Dispatcher.new
-      @state      = Zinke::Immutable.from_object(initial_state || {})
+      @state      = initial_state || {}
     end
 
     def dispatch(action)
@@ -85,7 +82,6 @@ module Zinke
     def guard_initial_state!(value)
       return if value.nil?
       return if value.is_a?(Hash)
-      return if value.is_a?(Hamster::Hash)
 
       message = "initial state must be a Hash or nil, but was #{value.inspect}"
 
