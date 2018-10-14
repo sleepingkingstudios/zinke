@@ -28,31 +28,7 @@ RSpec.describe Zinke::Store do
   let(:initial_state) { nil }
 
   describe '::new' do
-    let(:error_message) do
-      'initial state must be a Hash or nil'
-    end
-
     it { expect(described_class).to be_constructible.with(0..1).arguments }
-
-    describe 'with an Object' do
-      let(:object)        { Object.new }
-      let(:error_message) { super() + ", but was #{object.inspect}" }
-
-      it 'should raise an error' do
-        expect { described_class.new object }
-          .to raise_error ArgumentError, error_message
-      end
-    end
-
-    describe 'with an Array' do
-      let(:object)        { [] }
-      let(:error_message) { super() + ", but was #{object.inspect}" }
-
-      it 'should raise an error' do
-        expect { described_class.new object }
-          .to raise_error ArgumentError, error_message
-      end
-    end
   end
 
   describe '#dispatch' do
@@ -174,6 +150,12 @@ RSpec.describe Zinke::Store do
       let(:initial_state) { nil }
 
       it { expect(store.state).to be == {} }
+    end
+
+    describe 'when the initial state is an object' do
+      let(:initial_state) { Object.new }
+
+      it { expect(store.state).to be initial_state }
     end
 
     describe 'when the initial state is an empty hash' do
