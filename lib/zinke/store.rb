@@ -123,8 +123,6 @@ module Zinke
     #
     # @raise ArgumentError if the initial state is not a Hash or nil.
     def initialize(initial_state = nil)
-      guard_initial_state!(initial_state)
-
       @dispatcher = Dispatcher.new
       @state      = initial_state || {}
     end
@@ -170,16 +168,5 @@ module Zinke
     protected
 
     attr_writer :state
-
-    private
-
-    def guard_initial_state!(value)
-      return if value.nil?
-      return if value.is_a?(Hash)
-
-      message = "initial state must be a Hash or nil, but was #{value.inspect}"
-
-      raise ArgumentError, message, caller[1..-1]
-    end
   end
 end
