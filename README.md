@@ -103,6 +103,26 @@ bank_store.balance(1)
 
 Notice that in this example we are using the Hamster gem to make our initial state immutable. Zinke does not have a dependency on Hamster or any specific immutability library, nor does it enforce that the state must be immutable. It is, however, very strongly recommended.
 
+#### Initial State
+
+If `Store.new` is called with nil or with no arguments, it will initialize the store with the default state, which is an empty hash. To override this behavior, redefine the private `#initial_state` method on your Store subclass.
+
+```ruby
+class BankStore < Zinke::Store
+  private
+
+  def initial_state
+    Hamster::Hash[accounts: []]
+  end
+end
+
+empty_store = BankStore.new
+empty_store.state
+#=> Hamster::Hash[accounts: []]
+```
+
+Even if an initial state is defined, passing a non-`nil` value will set the state of the store to the passed value.
+
 #### Dispatching Actions
 
 Updates to the state are handled using the `Store#dispatch` method, which takes a single argument. This argument is the action, which is traditionally a Hash with a `:type` key and optionally other keys and values representing additional data.

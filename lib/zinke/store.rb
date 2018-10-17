@@ -118,13 +118,14 @@ module Zinke
       end
     end
 
-    # @param initial_state [Hash, nil] The initial state of the store. Using an
-    #   immutable data store is strongly recommended. Defaults to an empty hash.
+    # @param state [Hash, nil] The initial state of the store. Using an
+    #   immutable data store is strongly recommended. Defaults to the value of
+    #   #initial_state, which is an empty hash unless redefined by a subclass.
     #
     # @raise ArgumentError if the initial state is not a Hash or nil.
-    def initialize(initial_state = nil)
+    def initialize(state = nil)
       @dispatcher = Dispatcher.new
-      @state      = initial_state || {}
+      @state      = state || initial_state
     end
 
     # @return [Object] the current state of the store.
@@ -168,5 +169,11 @@ module Zinke
     protected
 
     attr_writer :state
+
+    private
+
+    def initial_state
+      {}
+    end
   end
 end
