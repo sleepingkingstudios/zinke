@@ -15,8 +15,9 @@ module Zinke
     #   #initial_state, which is an empty hash unless redefined by a subclass.
     #
     # @raise ArgumentError if the initial state is not a Hash or nil.
-    def initialize(state = nil)
-      @dispatcher = Zinke::Dispatcher.new
+    def initialize(state = nil, options = nil)
+      options   ||= {}
+      @dispatcher = options.fetch(:dispatcher) { build_dispatcher }
       @state      = state || initial_state
     end
 
@@ -35,6 +36,10 @@ module Zinke
     private
 
     attr_reader :dispatcher
+
+    def build_dispatcher
+      Zinke::Dispatcher.new
+    end
 
     def initial_state
       {}
