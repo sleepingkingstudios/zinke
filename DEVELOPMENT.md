@@ -20,24 +20,10 @@
   #=> { type: 'magic.actions.cast', spell: 'magic missile', target: 'goblin' }
   ```
 
-### Dispatcher
+### Reducers
 
-- Dispatcher::build_listener:
-  - build { |action| }
-  - build(action_name) { |action| }
-- #subscribe - calls ::build_listener with arguments
-
-### Listeners
-
-- extract Dispatcher, Listener
-- Listener subclasses
-  - base - no filtering                          #=> Listeners::Base
-  - action_type exact match (current Listener)   #=> Listeners::TypeListener
-
-### Stores
-
-- #initial_state
-- #subscribe delegates to @dispatcher
+- when a reducer returns nil, do not update the state
+  - current behavior - sets the state to nil!
 
 ## Future Versions
 

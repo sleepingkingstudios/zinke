@@ -68,7 +68,7 @@ module Zinke
     def initialize_reducers
       reducers.each do |(action_name, block)|
         subscribe(action_type: action_name) do |action|
-          self.state = instance_exec(state, action, &block)
+          self.state = instance_exec(state, action, &block) || state
         end
       end
     end
