@@ -117,7 +117,7 @@ RSpec.describe Zinke::Store do
       end
 
       it 'should raise an error' do
-        store.subscribe { store.subscribe }
+        store.subscribe { store.subscribe {} }
 
         expect { store.dispatch(action) }
           .to raise_error RuntimeError, error_message
@@ -287,7 +287,7 @@ RSpec.describe Zinke::Store do
     end
 
     describe 'with no action type' do
-      it { expect(store.subscribe {}).to be_a described_class::Listener }
+      it { expect(store.subscribe {}).to be_a Zinke::Listeners::BaseListener }
 
       context 'when an action is dispatched' do
         it 'should yield the block' do
@@ -302,7 +302,9 @@ RSpec.describe Zinke::Store do
     end
 
     describe 'with an action type' do
-      it { expect(store.subscribe(type) {}).to be_a described_class::Listener }
+      it 'should return a type listener' do
+        expect(store.subscribe(type) {}).to be_a Zinke::Listeners::TypeListener
+      end
 
       context 'when a non-matching action is dispatched' do
         let(:action) { { type: 'spec.actions.other_action' } }
