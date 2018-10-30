@@ -20,6 +20,13 @@
   #=> { type: 'magic.actions.cast', spell: 'magic missile', target: 'goblin' }
   ```
 
+### Dispatcher
+
+- Dispatcher::build_listener:
+  - build { |action| }
+  - build(action_name) { |action| }
+- #subscribe - calls ::build_listener with arguments
+
 ### Listeners
 
 - extract Dispatcher, Listener
@@ -30,6 +37,7 @@
 ### Stores
 
 - #initial_state
+- #subscribe delegates to @dispatcher
 
 ## Future Versions
 
@@ -48,15 +56,9 @@
   end
   ```
 
-### Listeners
+### Dispatcher
 
-- Listener subclasses
-  - action_type included in set                  #=> TypeSetListener
-  - action_type matches matchable (RegExp, proc) #=> MatchListener
-- ListenerFactory:
-  - build(listener)
-  - build { |action| }
-  - build(action_name) { |action| }
+- Dispatcher::build_listener:
   - build(\*action_names) { |action| }
     #=> Set.new(action_names).include?(action[:type])
   - build(pattern) { |action| }
@@ -64,8 +66,12 @@
   - build(proc) { |action| }
     #=> proc === action[:type]
 
+### Listeners
+
+- Listener subclasses
+  - action_type included in set                  #=> TypeSetListener
+  - action_type matches matchable (RegExp, proc) #=> MatchListener
+
 ### Store
 
 - inject dispatcher in constructor
-- inject listener_factory in constructor
-  - #subscribe delegates to @listener_factory

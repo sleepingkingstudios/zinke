@@ -23,9 +23,9 @@ RSpec.describe Zinke::Store do
     before(:example) { allow(matching_listener).to receive(:update) }
   end
 
-  subject(:store) { described_class.new(initial_state) }
+  subject(:store) { described_class.new(state) }
 
-  let(:initial_state) { nil }
+  let(:state) { nil }
 
   describe '::new' do
     it { expect(described_class).to be_constructible.with(0..1).arguments }
@@ -146,39 +146,38 @@ RSpec.describe Zinke::Store do
       it { expect(store.state).to be == {} }
     end
 
-    describe 'when the initial state is nil' do
-      let(:initial_state) { nil }
+    describe 'when initialized with nil' do
+      let(:state) { nil }
 
       it { expect(store.state).to be == {} }
     end
 
-    describe 'when the initial state is an object' do
-      let(:initial_state) { Object.new }
+    describe 'when initialized with an object' do
+      let(:state) { Object.new }
 
-      it { expect(store.state).to be initial_state }
+      it { expect(store.state).to be state }
     end
 
-    describe 'when the initial state is an empty hash' do
-      let(:initial_state) { {} }
+    describe 'when initialized with an empty hash' do
+      let(:state) { {} }
 
       it { expect(store.state).to be == {} }
     end
 
-    describe 'when the initial state is a hash' do
-      let(:initial_state) do
+    describe 'when initialized with a hash' do
+      let(:state) do
         {
           era:   'Renaissance',
           genre: 'High Fantasy',
           magic: :high
         }
       end
-      let(:expected) { initial_state }
 
-      it { expect(store.state).to be == expected }
+      it { expect(store.state).to be == state }
     end
 
-    describe 'when the initial state is a hash with nested values' do
-      let(:initial_state) do
+    describe 'when initialized with a hash with nested values' do
+      let(:state) do
         {
           weapons: {
             bows: Set.new(%w[crossbow longbow shortbow]),
@@ -189,9 +188,75 @@ RSpec.describe Zinke::Store do
           }
         }
       end
-      let(:expected) { initial_state }
 
-      it { expect(store.state).to be == expected }
+      it { expect(store.state).to be == state }
+    end
+
+    context 'when the store defines an initial state' do
+      let(:described_class) { Spec::ExampleStore }
+      let(:initial_state) do
+        { magic_users: %w[Arcanist Magister Warlock] }
+      end
+
+      # rubocop:disable RSpec/DescribedClass
+      example_class 'Spec::ExampleStore', Zinke::Store do |klass|
+        state = initial_state
+
+        klass.send :define_method, :initial_state, -> { state }
+      end
+      # rubocop:enable RSpec/DescribedClass
+
+      describe 'when initialized with no arguments' do
+        let(:store) { described_class.new }
+
+        it { expect(store.state).to be == initial_state }
+      end
+
+      describe 'when initialized with nil' do
+        let(:state) { nil }
+
+        it { expect(store.state).to be == initial_state }
+      end
+
+      describe 'when initialized with an object' do
+        let(:state) { Object.new }
+
+        it { expect(store.state).to be state }
+      end
+
+      describe 'when initialized with an empty hash' do
+        let(:state) { {} }
+
+        it { expect(store.state).to be == {} }
+      end
+
+      describe 'when initialized with a hash' do
+        let(:state) do
+          {
+            era:   'Renaissance',
+            genre: 'High Fantasy',
+            magic: :high
+          }
+        end
+
+        it { expect(store.state).to be == state }
+      end
+
+      describe 'when initialized with a hash with nested values' do
+        let(:state) do
+          {
+            weapons: {
+              bows: Set.new(%w[crossbow longbow shortbow]),
+              polearms: %w[halberd pike spear],
+              swords: {
+                japanese: Set.new(%w[shoto daito tachi])
+              }
+            }
+          }
+        end
+
+        it { expect(store.state).to be == state }
+      end
     end
   end
 
