@@ -3,24 +3,55 @@
 require 'zinke/store'
 
 RSpec.describe Zinke::Store do
-  shared_context 'with a listener with no action type' do
-    let(:unscoped_listener) { store.subscribe {} }
+  shared_context 'when the dispatcher has a subscribed listener' do
+    let(:handler_method) { defined?(super()) ? super() : :update }
+    let(:listener)       { store.subscribe {} }
 
-    before(:example) { allow(unscoped_listener).to receive(:update) }
+    before(:example) { allow(listener).to receive(handler_method) }
   end
 
-  shared_context 'with a listener with a non-matching action type' do
-    let(:non_matching_listener) do
-      store.subscribe('spec.actions.other_action') {}
+  shared_context 'when the store defines #build_dispatcher' do
+    let(:described_class) { Spec::ExampleStore }
+    let(:handler_method)  { :call }
+
+    example_class 'Spec::CustomDispatcher' do |klass|
+      # rubocop:disable RSpec/InstanceVariable
+      klass.class_eval do
+        def initialize
+          @handlers = []
+        end
+
+        def dispatch(action)
+          @handlers.each { |handler| handler.call(action) }
+        end
+
+        def subscribe(&block)
+          @handlers << block
+
+          block
+        end
+
+        def unsubscribe(proc)
+          @handlers.delete(proc)
+        end
+      end
+      # rubocop:enable RSpec/InstanceVariable
     end
 
-    before(:example) { allow(non_matching_listener).to receive(:update) }
+    # rubocop:disable RSpec/DescribedClass
+    example_class 'Spec::ExampleStore', Zinke::Store do |klass|
+      klass.send :define_method, :build_dispatcher do
+        Spec::CustomDispatcher.new
+      end
+    end
+    # rubocop:enable RSpec/DescribedClass
   end
 
-  shared_context 'with a listener with a matching action type' do
-    let(:matching_listener) { store.subscribe(type) {} }
+  shared_context 'when the store has a custom dispatcher' do
+    let(:dispatcher) { Spec::ExampleDispatcher.new }
+    let(:store)      { described_class.new(state, dispatcher: dispatcher) }
 
-    before(:example) { allow(matching_listener).to receive(:update) }
+    example_class 'Spec::ExampleDispatcher', Zinke::Dispatcher
   end
 
   subject(:store) { described_class.new(state) }
@@ -28,111 +59,76 @@ RSpec.describe Zinke::Store do
   let(:state) { nil }
 
   describe '::new' do
-    it { expect(described_class).to be_constructible.with(0..1).arguments }
+    it { expect(described_class).to be_constructible.with(0..2).arguments }
   end
 
   describe '#dispatch' do
-    let(:type)   { 'spec.actions.example_action' }
-    let(:action) { { type: type } }
+    let(:action) { { type: 'spec.actions.example_action' } }
 
-    it { expect(store).to respond_to(:dispatch).with(1).argument }
+    it 'should delegate to the dispatcher' do
+      expect(store)
+        .to delegate_method(:dispatch)
+        .to(store.send :dispatcher)
+        .with_arguments(action)
+    end
 
-    wrap_context 'with a listener with no action type' do
+    wrap_context 'when the dispatcher has a subscribed listener' do
       it 'should call #update with the action' do
         store.dispatch(action)
 
-        expect(unscoped_listener).to have_received(:update).with(action)
+        expect(listener).to have_received(:update).with(action)
       end
     end
 
-    wrap_context 'with a listener with a non-matching action type' do
-      it 'should call #update with the action' do
-        store.dispatch(action)
+    wrap_context 'when the store defines #build_dispatcher' do
+      it 'should delegate to the dispatcher' do
+        expect(store)
+          .to delegate_method(:dispatch)
+          .to(store.send :dispatcher)
+          .with_arguments(action)
+      end
 
-        expect(non_matching_listener).to have_received(:update).with(action)
+      wrap_context 'when the dispatcher has a subscribed listener' do
+        it 'should call #call with the action' do
+          store.dispatch(action)
+
+          expect(listener).to have_received(:call).with(action)
+        end
       end
     end
 
-    wrap_context 'with a listener with a matching action type' do
-      it 'should call #update with the action' do
-        store.dispatch(action)
+    wrap_context 'when the store has a custom dispatcher' do
+      it 'should delegate to the dispatcher' do
+        expect(store)
+          .to delegate_method(:dispatch)
+          .to(store.send :dispatcher)
+          .with_arguments(action)
+      end
 
-        expect(matching_listener).to have_received(:update).with(action)
+      wrap_context 'when the dispatcher has a subscribed listener' do
+        it 'should call #update with the action' do
+          store.dispatch(action)
+
+          expect(listener).to have_received(:update).with(action)
+        end
       end
     end
+  end
 
-    context 'with multiple listeners' do
-      include_context 'with a listener with no action type'
-      include_context 'with a listener with a non-matching action type'
-      include_context 'with a listener with a matching action type'
+  describe '#dispatcher' do
+    include_examples 'should have private reader',
+      :dispatcher,
+      -> { an_instance_of Zinke::Dispatcher }
 
-      let(:listeners) do
-        [
-          unscoped_listener,
-          non_matching_listener,
-          matching_listener
-        ]
-      end
-
-      it 'should call #update on each listener with the action' do
-        store.dispatch(action)
-
-        expect(listeners).to all have_received(:update).with(action)
-      end
+    wrap_context 'when the store defines #build_dispatcher' do
+      it { expect(store.send :dispatcher).to be_a Spec::CustomDispatcher }
     end
 
-    context 'when the listener dispatches an action' do
-      include_context 'with a listener with no action type'
+    wrap_context 'when the store has a custom dispatcher' do
+      it { expect(store.send :dispatcher).to be dispatcher }
 
-      let(:actions)      { [] }
-      let(:inner_type)   { 'spec.actions.inner_action' }
-      let(:inner_action) { { type: inner_type } }
-
-      before(:example) do
-        inner = inner_action
-        store.subscribe(type) { store.dispatch(inner) }
-      end
-
-      # rubocop:disable RSpec/ExampleLength
-      # rubocop:disable RSpec/MultipleExpectations
-      it 'should call #update with the inner action' do
-        store.dispatch(action)
-
-        expect(unscoped_listener)
-          .to have_received(:update)
-          .with(action)
-          .ordered
-        expect(unscoped_listener)
-          .to have_received(:update)
-          .with(inner_action)
-          .ordered
-      end
-      # rubocop:enable RSpec/ExampleLength
-      # rubocop:enable RSpec/MultipleExpectations
-    end
-
-    context 'when the listener adds a listener' do
-      let(:error_message) do
-        "can't add a listener while dispatching an action"
-      end
-
-      it 'should raise an error' do
-        store.subscribe { store.subscribe {} }
-
-        expect { store.dispatch(action) }
-          .to raise_error RuntimeError, error_message
-      end
-    end
-
-    context 'when the listener raises an error' do
-      let(:error_message) { 'something has gone terribly wrong' }
-
-      it 'should raise the error' do
-        message = error_message
-        store.subscribe { raise message }
-
-        expect { store.dispatch(action) }
-          .to raise_error RuntimeError, error_message
+      wrap_context 'when the store defines #build_dispatcher' do
+        it { expect(store.send :dispatcher).to be dispatcher }
       end
     end
   end
@@ -279,104 +275,91 @@ RSpec.describe Zinke::Store do
   end
 
   describe '#subscribe' do
-    let(:type)   { 'spec.actions.example_action' }
-    let(:action) { { type: type } }
-
-    it 'should define the method' do
-      expect(store).to respond_to(:subscribe).with(0..1).arguments.and_a_block
+    it 'should delegate to the dispatcher' do
+      expect(store)
+        .to delegate_method(:subscribe)
+        .to(store.send :dispatcher)
+        .with_a_block
     end
 
-    describe 'with no action type' do
-      it { expect(store.subscribe {}).to be_a Zinke::Listeners::BaseListener }
-
-      context 'when an action is dispatched' do
-        it 'should yield the block' do
-          expect do |block|
-            store.subscribe(&block)
-
-            store.dispatch(action)
-          end
-            .to yield_with_args(action)
-        end
+    wrap_context 'when the store defines #build_dispatcher' do
+      it 'should delegate to the dispatcher' do
+        expect(store)
+          .to delegate_method(:subscribe)
+          .to(store.send :dispatcher)
+          .with_a_block
       end
     end
 
-    describe 'with an action type' do
-      it 'should return a type listener' do
-        expect(store.subscribe(type) {}).to be_a Zinke::Listeners::TypeListener
-      end
-
-      context 'when a non-matching action is dispatched' do
-        let(:action) { { type: 'spec.actions.other_action' } }
-
-        it 'should yield the block' do
-          expect do |block|
-            store.subscribe(type, &block)
-
-            store.dispatch(action)
-          end
-            .not_to yield_control
-        end
-      end
-
-      context 'when a matching action is dispatched' do
-        it 'should yield the block' do
-          expect do |block|
-            store.subscribe(type, &block)
-
-            store.dispatch(action)
-          end
-            .to yield_with_args(action)
-        end
+    wrap_context 'when the store has a custom dispatcher' do
+      it 'should delegate to the dispatcher' do
+        expect(store)
+          .to delegate_method(:subscribe)
+          .to(store.send :dispatcher)
+          .with_a_block
       end
     end
   end
 
   describe '#unsubscribe' do
-    let(:type)   { 'spec.actions.example_action' }
-    let(:action) { { type: type } }
+    let(:action)   { { type: 'spec.actions.example_action' } }
+    let(:listener) { instance_double(Zinke::Listeners::BaseListener) }
 
-    it { expect(store).to respond_to(:unsubscribe).with(1).argument }
+    it 'should delegate to the dispatcher' do
+      expect(store)
+        .to delegate_method(:unsubscribe)
+        .to(store.send :dispatcher)
+        .with_arguments(listener)
+    end
 
-    wrap_context 'with a listener with no action type' do
-      context 'when an action is dispatched' do
-        it 'should not call #update' do
-          store.unsubscribe(unscoped_listener)
+    wrap_context 'when the dispatcher has a subscribed listener' do
+      it 'should not call #update' do
+        store.unsubscribe(listener)
+
+        store.dispatch(action)
+
+        expect(listener).not_to have_received(:update)
+      end
+    end
+
+    wrap_context 'when the store defines #build_dispatcher' do
+      let(:listener) { ->(_) {} }
+
+      it 'should delegate to the dispatcher' do
+        expect(store)
+          .to delegate_method(:unsubscribe)
+          .to(store.send :dispatcher)
+          .with_arguments(listener)
+      end
+
+      wrap_context 'when the dispatcher has a subscribed listener' do
+        it 'should not call #call' do
+          store.unsubscribe(listener)
 
           store.dispatch(action)
 
-          expect(unscoped_listener).not_to have_received(:update)
+          expect(listener).not_to have_received(:call)
         end
       end
     end
 
-    context 'with multiple listeners' do
-      include_context 'with a listener with no action type'
-      include_context 'with a listener with a non-matching action type'
-      include_context 'with a listener with a matching action type'
+    wrap_context 'when the store has a custom dispatcher' do
+      let(:listener) { ->(_) {} }
 
-      let(:active_listeners) do
-        [
-          non_matching_listener,
-          matching_listener
-        ]
+      it 'should delegate to the dispatcher' do
+        expect(store)
+          .to delegate_method(:unsubscribe)
+          .to(store.send :dispatcher)
+          .with_arguments(listener)
       end
 
-      context 'when an action is dispatched' do
-        it 'should not call #update on the unsubscribed listener' do
-          store.unsubscribe(unscoped_listener)
+      wrap_context 'when the dispatcher has a subscribed listener' do
+        it 'should not call #update' do
+          store.unsubscribe(listener)
 
           store.dispatch(action)
 
-          expect(unscoped_listener).not_to have_received(:update)
-        end
-
-        it 'should call #update on each remaining listener with the action' do
-          store.unsubscribe(unscoped_listener)
-
-          store.dispatch(action)
-
-          expect(active_listeners).to all have_received(:update).with(action)
+          expect(listener).not_to have_received(:update)
         end
       end
     end
